@@ -20,6 +20,14 @@ export default defineComponent({
         const key = unique()
         elements.value.push({ key, value: key })
       },
+      onAction: (...args: any[]) => console.log(...args),
+      folderLoad: async (id: string, append: (news: Map<number | string, Folder>) => void, isCached: boolean, update: () => void) => {
+        if (!isCached) {
+          await fetch(`#${id}`)
+          append(new Map())
+        }
+        update()
+      },
       initialLoad: (append: (n: Map<string, Folder>) => void) =>
         append(
           new Map([
@@ -63,7 +71,7 @@ export default defineComponent({
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
 
   <div id="app">
-    <file-explorer @initialLoad="initialLoad"></file-explorer>
+    <file-explorer @initialLoad="initialLoad" @folderLoad="folderLoad" @action="onAction"></file-explorer>
   </div>
 </template>
 

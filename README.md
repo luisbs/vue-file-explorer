@@ -21,77 +21,68 @@ Emulate a file explorer
       - **layout-selector**
 
         - `button[data-layout]` - Cards
-        - `button[data-layout]` - Details
+        - `button[data-layout]` - table
 
   - `div.vfe-content`
 
     - `* div.vfe-cards`
 
-      - **cards-folders** `{ folders }`
+      - **cards-folders** `{ folders, tree }`
 
         - `div.vfe-folder`
 
-          - **cards-folder** `{ id, title, data }`
+          - **cards-folder** `{ id, data, tree }`
 
-            - `button[data-open]` - id - title
+            - `button[data-open]` - id
 
       - **cards-files** `{ files }`
 
         - `div.vfe-file`
 
-          - **cards-file** `{ id, title, data }`
-
-            - `span` - id - title
-
-    - `* ul.vfe-details`
-
-      - **details-header**
-
-        - `li.vfe-header`
-
-          - `span` - Id
-          - `span` - Name
-          - `span` - Actions
-
-      - **details-folders** `{ folders }`
-
-        - `li.vfe-folder`
-
-          - **details-folder** `{ id, title, data }`
+          - **cards-file** `{ id, data }`
 
             - `span` - id
-            - `span` - title
 
-          - **folder-actions** `{ id }`
+    - `* table.vfe-table`
 
-            - `div.vfe-actions`
+      - `thead.vfe-header`
 
-              - `span[data-menu]` - Actions
-              - `div.vfe-menu`
+        - **table-header**
 
-                - **folder-menu** `{ id }`
+          - `tr`
+
+            - `th` - Id
+            - `th` - Actions
+
+      - `tbody.vfe-content`
+
+        - **table-folders** `{ folders, tree }`
+
+          - `tr.vfe-folder`
+
+            - **table-folder** `{ id, data, tree }`
+
+              - `td` - id
+              - `td.vfe-actions`
+
+                - `input:checkbox` - Actions
+                - `div.vfe-menu`
 
                   - `button[data-open]` - Abrir
                   - `button[data-action="rename"]` - Renombrar
                   - `button[data-action="delete"]` - Eliminar
 
-      - **details-files** `{ files }`
+        - **table-files** `{ files }`
 
-        - `li.vfe-file`
+          - `tr.vfe-file`
 
-          - **details-file** `{ id, title, data }`
+            - **table-file** `{ id, data }`
 
-            - `span` - id
-            - `span` - title
+              - `td` - id
+              - `td.vfe-actions`
 
-          - **file-actions** `{ id }`
-
-            - `div.vfe-actions`
-
-              - `span[data-menu]` - Actions
-              - `div.vfe-menu`
-
-                - **file-menu** `{ id }`
+                - `input:checkbox` - Actions
+                - `div.vfe-menu`
 
                   - `button[data-open]` - Abrir
                   - `button[data-action="rename"]` - Renombrar

@@ -2,14 +2,25 @@ import { defineComponent, ref, watch, onMounted, computed, openBlock, createBloc
 
 var script = /*#__PURE__*/defineComponent({
   name: "FileExplorer",
-  emits: ["initialLoad", "folderLoad", "event"],
+  emits: ["initialLoad", "folderLoad", "action", "preUpdate", "postUpdate"],
   props: {
     layout: {
       type: String,
-      default: "cards",
-      validator: v => ["details", "cards"].includes(v)
+      default: "table",
+      validator: v => ["cards", "table"].includes(v)
     },
-    render: Function
+
+    /** Defines wich prop would be used to extract the title/name of a folder/file */
+    title: {
+      type: String,
+      default: "title"
+    },
+
+    /** Classes to be added to cards wrapper */
+    cards: String,
+
+    /** Classes to be added to the table */
+    table: String
   },
 
   setup(props, {
@@ -20,7 +31,7 @@ var script = /*#__PURE__*/defineComponent({
     const Tree = ref(new Map());
     const folderId = ref(0);
 
-    const appendToTree = news => news.forEach((v, k) => Tree.value.set(k, v));
+    const appendToTree = news => news.forEach((v, k) => Tree.value.set(String(k), v));
 
     emit("initialLoad", appendToTree);
     folderId.value = Array.from(Tree.value.keys()).shift() || 0;
@@ -29,26 +40,32 @@ var script = /*#__PURE__*/defineComponent({
 
     const attachListeners = () => {
       attach("button[data-open]", (_, el) => {
-        folderId.value = el.dataset.open || 0;
-        emit("folderLoad", folderId.value, appendToTree, Tree.value.has(folderId.value));
+        const id = el.dataset.open || 0;
+        emit("folderLoad", id, appendToTree, Tree.value.has(id), () => folderId.value = id);
       });
-      attach(".vfe-folder button[data-action]", (_, el) => emit("event", {
+      attach(".vfe-folder button[data-action]", (_, el) => emit("action", {
         type: "folder",
-        event: el.dataset.action || "unknown",
+        action: el.dataset.action || "unknown",
         elementId: el.dataset.element || 0
       }));
-      attach(".vfe-file button[data-action]", (_, el) => emit("event", {
+      attach(".vfe-file button[data-action]", (_, el) => emit("action", {
         type: "file",
-        event: el.dataset.action || "unknown",
+        action: el.dataset.action || "unknown",
         elementId: el.dataset.element || 0
       }));
     };
 
-    watch(folderId, attachListeners, {
+    watch([_layout, folderId], ([l]) => emit("preUpdate", l), {
+      flush: "pre"
+    });
+    watch([_layout, folderId], ([l]) => {
+      attachListeners();
+      emit("postUpdate", l);
+    }, {
       flush: "post"
     });
     onMounted(() => {
-      attach("button[data-layout]", (_, el) => _layout.value = el.dataset.layout || "details");
+      attach("button[data-layout]", (_, el) => _layout.value = el.dataset.layout || "table");
       attachListeners();
     });
     return {
@@ -68,23 +85,23 @@ var script = /*#__PURE__*/defineComponent({
       path: computed(() => {
         const path = []; // * Current folder
 
-        const dt = Tree.value.get(folderId.value) || {};
-        path.push([folderId.value, dt.title, "current"]); // * Path
+        const dt = Tree.value.get(folderId.value);
+        path.push([folderId.value, String(dt === null || dt === void 0 ? void 0 : dt[props.title]), "current"]); // * Path
 
-        if (dt.parentId) {
-          var _dt$parentId;
+        if (dt !== null && dt !== void 0 && dt.parentId) {
+          var _String;
 
-          let id = (_dt$parentId = dt.parentId) !== null && _dt$parentId !== void 0 ? _dt$parentId : null;
+          let id = (_String = String(dt.parentId)) !== null && _String !== void 0 ? _String : null;
 
           do {
             const dt = Tree.value.get(id);
 
             if (dt) {
               if (!dt.parentId) {
-                path.unshift([id, dt.title, "root"]);
+                path.unshift([id, String(dt === null || dt === void 0 ? void 0 : dt[props.title]), "root"]);
                 id = null;
               } else {
-                path.unshift([id, dt.title]);
+                path.unshift([id, String(dt === null || dt === void 0 ? void 0 : dt[props.title])]);
                 id = dt.parentId;
               }
             }
@@ -121,25 +138,21 @@ const _hoisted_6 = /*#__PURE__*/createVNode("button", {
 
 const _hoisted_7 = /*#__PURE__*/createVNode("button", {
   type: "button",
-  "data-layout": "details"
-}, "Details Layout", -1);
+  "data-layout": "table"
+}, "Table Layout", -1);
 
 const _hoisted_8 = {
   class: "vfe-content"
 };
 const _hoisted_9 = {
-  key: 0,
-  class: "vfe-cards"
-};
-const _hoisted_10 = {
-  key: 1,
-  class: "vfe-details"
-};
-
-const _hoisted_11 = /*#__PURE__*/createVNode("li", {
   class: "vfe-header"
-}, [/*#__PURE__*/createVNode("span", null, "Id"), /*#__PURE__*/createVNode("span", null, "Name"), /*#__PURE__*/createVNode("span", null, "Actions")], -1);
+};
 
+const _hoisted_10 = /*#__PURE__*/createVNode("tr", null, [/*#__PURE__*/createVNode("th", null, "Id"), /*#__PURE__*/createVNode("th", null, "Actions")], -1);
+
+const _hoisted_11 = {
+  class: "vfe-content"
+};
 const _hoisted_12 = {
   class: "vfe-actions"
 };
@@ -163,51 +176,54 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       type: "button",
       "data-open": id
     }, toDisplayString(title), 9, ["data-open"]))], 64);
-  }), 128))])]), createVNode("div", null, toDisplayString(_ctx.folderId), 1), createVNode("div", _hoisted_5, [renderSlot(_ctx.$slots, "layout-selector", {}, () => [_hoisted_6, _hoisted_7])])]), createVNode("div", _hoisted_8, [_ctx.layoutType === 'cards' ? (openBlock(), createBlock("div", _hoisted_9, [renderSlot(_ctx.$slots, "cards-folders", {
-    folders: _ctx.folders
+  }), 128))])]), createVNode("div", _hoisted_5, [renderSlot(_ctx.$slots, "layout-selector", {}, () => [_hoisted_6, _hoisted_7])])]), createVNode("div", _hoisted_8, [_ctx.layoutType === 'cards' ? (openBlock(), createBlock("div", {
+    key: 0,
+    class: ["vfe-cards", _ctx.cards]
+  }, [renderSlot(_ctx.$slots, "cards-folders", {
+    folders: _ctx.folders,
+    tree: _ctx.tree
   }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.folders, (f, i) => {
     return openBlock(), createBlock("div", {
       key: i,
       class: "vfe-folder"
     }, [renderSlot(_ctx.$slots, "cards-folder", {
       id: f.id,
-      title: f.title,
-      data: f
+      data: f,
+      tree: _ctx.tree
     }, () => [createVNode("button", {
       type: "butten",
       "data-open": f.id
-    }, toDisplayString(f.id) + " - " + toDisplayString(f.title), 9, ["data-open"])])]);
+    }, toDisplayString(f.id), 9, ["data-open"])])]);
   }), 128))]), renderSlot(_ctx.$slots, "cards-files", {
     files: _ctx.files
   }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.files, (f, i) => {
     return openBlock(), createBlock("div", {
       key: i,
-      class: "vfe-files"
+      class: "vfe-file"
     }, [renderSlot(_ctx.$slots, "cards-file", {
       id: f.id,
-      title: f.title,
       data: f
-    }, () => [createVNode("span", null, toDisplayString(f.id) + " - " + toDisplayString(f.title), 1)])]);
-  }), 128))])])) : (openBlock(), createBlock("ul", _hoisted_10, [renderSlot(_ctx.$slots, "details-header", {}, () => [_hoisted_11]), renderSlot(_ctx.$slots, "details-folders", {
-    folders: _ctx.folders
-  }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.folders, (f, i) => {
-    return openBlock(), createBlock("li", {
-      key: i,
+    }, () => [createVNode("span", null, toDisplayString(f.id), 1)])]);
+  }), 128))])], 2)) : (openBlock(), createBlock("table", {
+    key: 1,
+    class: ["vfe-table", _ctx.table]
+  }, [createVNode("thead", _hoisted_9, [renderSlot(_ctx.$slots, "table-header", {}, () => [_hoisted_10])]), createVNode("tbody", _hoisted_11, [renderSlot(_ctx.$slots, "table-folders", {
+    folders: _ctx.folders,
+    tree: _ctx.tree
+  }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.folders, f => {
+    return openBlock(), createBlock("tr", {
+      key: f.id,
       class: "vfe-folder"
-    }, [renderSlot(_ctx.$slots, "details-folder", {
+    }, [renderSlot(_ctx.$slots, "table-folder", {
       id: f.id,
-      title: f.title,
-      data: f
-    }, () => [createVNode("span", null, toDisplayString(f.id), 1), createVNode("span", null, toDisplayString(f.title), 1)]), renderSlot(_ctx.$slots, "folder-actions", {
-      id: f.id
-    }, () => [createVNode("div", _hoisted_12, [createVNode("label", {
+      data: f,
+      tree: _ctx.tree
+    }, () => [createVNode("td", null, toDisplayString(f.id), 1), createVNode("td", _hoisted_12, [createVNode("label", {
       for: `id-${f.id}`
     }, "Actions", 8, ["for"]), createVNode("input", {
       type: "checkbox",
       id: `id-${f.id}`
-    }, null, 8, ["id"]), createVNode("div", _hoisted_13, [renderSlot(_ctx.$slots, "folder-menu", {
-      id: f.id
-    }, () => [createVNode("button", {
+    }, null, 8, ["id"]), createVNode("div", _hoisted_13, [createVNode("button", {
       type: "button",
       "data-open": f.id
     }, "Abrir", 8, ["data-open"]), createVNode("button", {
@@ -218,27 +234,22 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       type: "button",
       "data-action": "delete",
       "data-element": f.id
-    }, "Eliminar", 8, ["data-element"])])])])])]);
-  }), 128))]), renderSlot(_ctx.$slots, "details-files", {
+    }, "Eliminar", 8, ["data-element"])])])])]);
+  }), 128))]), renderSlot(_ctx.$slots, "table-files", {
     files: _ctx.files
-  }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.files, (f, i) => {
-    return openBlock(), createBlock("li", {
-      key: i,
+  }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.files, f => {
+    return openBlock(), createBlock("tr", {
+      key: f.id,
       class: "vfe-file"
-    }, [renderSlot(_ctx.$slots, "details-file", {
+    }, [renderSlot(_ctx.$slots, "table-file", {
       id: f.id,
-      title: f.title,
       data: f
-    }, () => [createVNode("span", null, toDisplayString(f.id), 1), createVNode("span", null, toDisplayString(f.title), 1)]), renderSlot(_ctx.$slots, "file-actions", {
-      id: f.id
-    }, () => [createVNode("div", _hoisted_14, [createVNode("label", {
+    }, () => [createVNode("td", null, toDisplayString(f.id), 1), createVNode("td", _hoisted_14, [createVNode("label", {
       for: `id-${f.id}`
     }, "Actions", 8, ["for"]), createVNode("input", {
       type: "checkbox",
       id: `id-${f.id}`
-    }, null, 8, ["id"]), createVNode("div", _hoisted_15, [renderSlot(_ctx.$slots, "file-menu", {
-      id: f.id
-    }, () => [createVNode("button", {
+    }, null, 8, ["id"]), createVNode("div", _hoisted_15, [createVNode("button", {
       type: "button",
       "data-action": "open",
       "data-element": f.id
@@ -250,8 +261,8 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       type: "button",
       "data-action": "delete",
       "data-element": f.id
-    }, "Eliminar", 8, ["data-element"])])])])])]);
-  }), 128))])]))])]);
+    }, "Eliminar", 8, ["data-element"])])])])]);
+  }), 128))])])], 2))])]);
 }
 
 function styleInject(css, ref) {
@@ -281,7 +292,7 @@ function styleInject(css, ref) {
   }
 }
 
-var css_248z = "\n.vue-file-explorer {\n  display: flex;\n  flex-direction: column;\n}\n.vfe-bar {\n  display: flex;\n  justify-content: space-between;\n}\n/* .vfe-path */\n/* .vfe-layout */\n\n/* .vfe-content */\n/* .vfe-cards */\n.vfe-details {\n  display: flex;\n  flex-direction: column;\n}\n.vfe-details > * {\n  display: flex;\n  justify-content: space-between;\n}\n\n/* .vfe-header */\n/* .vfe-folder */\n/* .vfe-file */\n.vfe-actions {\n  position: relative;\n}\n.vfe-menu {\n  z-index: -1;\n  position: absolute;\n  right: 0;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  opacity: 0;\n  height: 0;\n  width: 0;\n}\n.vfe-actions > label {\n  user-select: none;\n}\n.vfe-actions > input {\n  display: none;\n}\n.vfe-actions > input:checked + .vfe-menu {\n  z-index: 1;\n  height: auto;\n  width: auto;\n  opacity: 1;\n}\n";
+var css_248z = "\n.vue-file-explorer {\n  display: flex;\n  flex-direction: column;\n}\n.vfe-bar {\n  display: flex;\n  justify-content: space-between;\n}\n/* .vfe-path */\n/* .vfe-layout */\n\n/* .vfe-content */\n/* .vfe-cards */\n.vfe-table {\n  width: 100%;\n}\n/* .vfe-table > * */\n\n/* .vfe-header */\n/* .vfe-folder */\n/* .vfe-file */\n.vfe-actions {\n  position: relative;\n}\n.vfe-actions > label {\n  user-select: none;\n}\n.vfe-actions > input[type=\"checkbox\"] {\n  display: none;\n}\n.vfe-actions .vfe-menu {\n  z-index: -1;\n  position: absolute;\n  display: flex;\n  flex-direction: column;\n  overflow: hidden;\n  opacity: 0;\n  height: 0;\n  width: 0;\n}\n.vfe-actions > input:checked + .vfe-menu {\n  z-index: 1;\n  height: auto;\n  width: auto;\n  opacity: 1;\n}\n";
 styleInject(css_248z);
 
 script.render = render;
