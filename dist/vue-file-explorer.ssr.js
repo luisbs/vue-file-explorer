@@ -55,6 +55,63 @@ function _arrayLikeToArray(arr, len) {
 
 function _nonIterableRest() {
   throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+}
+
+function _createForOfIteratorHelper(o, allowArrayLike) {
+  var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"];
+
+  if (!it) {
+    if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") {
+      if (it) o = it;
+      var i = 0;
+
+      var F = function () {};
+
+      return {
+        s: F,
+        n: function () {
+          if (i >= o.length) return {
+            done: true
+          };
+          return {
+            done: false,
+            value: o[i++]
+          };
+        },
+        e: function (e) {
+          throw e;
+        },
+        f: F
+      };
+    }
+
+    throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
+  }
+
+  var normalCompletion = true,
+      didErr = false,
+      err;
+  return {
+    s: function () {
+      it = it.call(o);
+    },
+    n: function () {
+      var step = it.next();
+      normalCompletion = step.done;
+      return step;
+    },
+    e: function (e) {
+      didErr = true;
+      err = e;
+    },
+    f: function () {
+      try {
+        if (!normalCompletion && it.return != null) it.return();
+      } finally {
+        if (didErr) throw err;
+      }
+    }
+  };
 }var script = /*#__PURE__*/vue.defineComponent({
   name: "FileExplorer",
   emits: ["initialLoad", "folderLoad", "action", "preUpdate", "postUpdate"],
@@ -84,90 +141,110 @@ function _nonIterableRest() {
 
     var _layout = vue.ref(props.layout);
 
-    var Tree = vue.ref(new Map());
-    var folderId = vue.ref(0);
+    var _tree = vue.ref(new Map());
+
+    var folderId = vue.ref("0");
 
     var appendToTree = function appendToTree(news) {
-      return news.forEach(function (v, k) {
-        return Tree.value.set(String(k), v);
+      console.log("appending", news);
+
+      if (Array.isArray(news)) {
+        if (typeof news[0] === "string") {
+          console.log("adding by simple Array '".concat(news[0], "' - ").concat(String(news[0])), news[1]);
+          if (news[0] != "8") _tree.value.set(String(news[0]), news[1]); // _tree.value.set(String(news[0]), news[1] as Folder)
+          // } else (news as Array<[string, Folder]>).forEach(([k, v]) => console.log(`adding by Array '${k}' - ${String(k)}`, v))
+        } else news.forEach(function (_ref2) {
+          var _ref3 = _slicedToArray(_ref2, 2),
+              k = _ref3[0],
+              v = _ref3[1];
+
+          return _tree.value.set(String(k), v);
+        }); // } else news.forEach((v, k) => console.log(`adding by simple Array '${k}' - ${String(k)}`, v))
+
+      } else news.forEach(function (v, k) {
+        return _tree.value.set(String(k), v);
       });
     };
 
-    emit("initialLoad", appendToTree);
-    folderId.value = Array.from(Tree.value.keys()).shift() || 0;
+    emit("initialLoad", function (news) {
+      appendToTree(news);
+      folderId.value = String(Array.from(_tree.value.keys()).shift() || "0");
+    }); // watch([_layout, folderId], () => emit("preUpdate"))
+    // watch([_layout, folderId], () => emit("postUpdate"), { flush: "post" })
 
-    var attach = function attach(selector, listener) {
-      return document.querySelectorAll(".vfe ".concat(selector)).forEach(function (el) {
-        return el.onclick = function (ev) {
-          return listener(ev, el);
-        };
-      });
-    };
-
-    var attachListeners = function attachListeners() {
-      attach("button[data-open]", function (_, el) {
-        var id = el.dataset.open || 0;
-        emit("folderLoad", id, appendToTree, Tree.value.has(id), function () {
-          return folderId.value = id;
-        });
-      });
-      attach(".vfe-folder button[data-action]", function (_, el) {
-        return emit("action", {
-          type: "folder",
-          action: el.dataset.action || "unknown",
-          elementId: el.dataset.element || 0
-        });
-      });
-      attach(".vfe-file button[data-action]", function (_, el) {
-        return emit("action", {
-          type: "file",
-          action: el.dataset.action || "unknown",
-          elementId: el.dataset.element || 0
-        });
-      });
-    };
-
-    vue.watch([_layout, folderId], function (_ref2) {
-      var _ref3 = _slicedToArray(_ref2, 1),
-          l = _ref3[0];
-
-      return emit("preUpdate", l);
-    }, {
-      flush: "pre"
-    });
-    vue.watch([_layout, folderId], function (_ref4) {
-      var _ref5 = _slicedToArray(_ref4, 1),
-          l = _ref5[0];
-
-      attachListeners();
-      emit("postUpdate", l);
-    }, {
-      flush: "post"
-    });
     vue.onMounted(function () {
-      attach("button[data-layout]", function (_, el) {
-        return _layout.value = el.dataset.layout || "table";
-      });
-      attachListeners();
+      var wrapper = document.querySelector(".vfe");
+
+      if (wrapper) {
+        wrapper.onclick = function (ev) {
+          try {
+            var _ref4, _ev$composedPath, _event, _event$target, _event2, _event3;
+
+            // @ts-expect-error
+            var _iterator = _createForOfIteratorHelper((_ref4 = (_ev$composedPath = ev.composedPath()) !== null && _ev$composedPath !== void 0 ? _ev$composedPath : (_event = event) === null || _event === void 0 ? void 0 : _event.path) !== null && _ref4 !== void 0 ? _ref4 : [(_event$target = (_event2 = event) === null || _event2 === void 0 ? void 0 : _event2.target) !== null && _event$target !== void 0 ? _event$target : (_event3 = event) === null || _event3 === void 0 ? void 0 : _event3.currentTarget]),
+                _step;
+
+            try {
+              for (_iterator.s(); !(_step = _iterator.n()).done;) {
+                var _dataset;
+
+                var el = _step.value;
+                if (el === wrapper) break;
+                var set = (_dataset = el === null || el === void 0 ? void 0 : el.dataset) !== null && _dataset !== void 0 ? _dataset : {}; // * data-open="folderId"
+
+                if ("open" in set) {
+                  (function () {
+                    var id = set.open || "0";
+                    emit("folderLoad", id, appendToTree, _tree.value.has(id), function () {
+                      return folderId.value = id;
+                    });
+                  })();
+                } // * data-layout="table|cards"
+                else if ("layout" in set) _layout.value = set.layout || "table"; // * data-action="<user-defained-action>" data-folder="folderId"
+                  else if ("action" in set && "folder" in set) emit("action", {
+                      type: "folder",
+                      action: set.action || "unknown",
+                      elementId: set.folder || "0"
+                    }); // * data-action="<user-defained-action>" data-file="fileId"
+                    else if ("action" in set && "file" in set) emit("action", {
+                        type: "file",
+                        action: set.action || "unknown",
+                        elementId: set.file || "0"
+                      });
+              }
+            } catch (err) {
+              _iterator.e(err);
+            } finally {
+              _iterator.f();
+            }
+          } catch (error) {}
+        };
+      }
     });
     return {
-      tree: Tree,
+      tree: {},
+      // tree: _tree,
       layoutType: _layout,
       folderId: folderId,
+      // folders: computed(() => _tree.value.get(folderId.value)?.folders || []),
       folders: vue.computed(function () {
-        var _Tree$value$get;
+        var _tree$value$get;
 
-        return ((_Tree$value$get = Tree.value.get(folderId.value)) === null || _Tree$value$get === void 0 ? void 0 : _Tree$value$get.folders) || [];
+        var f = _tree.value.get(folderId.value);
+
+        console.log(folderId.value, f, f === null || f === void 0 ? void 0 : f.folders);
+        return ((_tree$value$get = _tree.value.get(folderId.value)) === null || _tree$value$get === void 0 ? void 0 : _tree$value$get.folders) || [];
       }),
       files: vue.computed(function () {
-        var _Tree$value$get2;
+        var _tree$value$get2;
 
-        return ((_Tree$value$get2 = Tree.value.get(folderId.value)) === null || _Tree$value$get2 === void 0 ? void 0 : _Tree$value$get2.files) || [];
+        return ((_tree$value$get2 = _tree.value.get(folderId.value)) === null || _tree$value$get2 === void 0 ? void 0 : _tree$value$get2.files) || [];
       }),
       path: vue.computed(function () {
         var path = []; // * Current folder
 
-        var dt = Tree.value.get(folderId.value);
+        var dt = _tree.value.get(folderId.value);
+
         path.push([folderId.value, String(dt === null || dt === void 0 ? void 0 : dt[props.title]), "current"]); // * Path
 
         if (dt !== null && dt !== void 0 && dt.parentId) {
@@ -176,7 +253,7 @@ function _nonIterableRest() {
           var id = (_String = String(dt.parentId)) !== null && _String !== void 0 ? _String : null;
 
           do {
-            var _dt = Tree.value.get(id);
+            var _dt = _tree.value.get(id);
 
             if (_dt) {
               if (!_dt.parentId) {
@@ -238,12 +315,6 @@ var _hoisted_12 = {
 var _hoisted_13 = {
   class: "vfe-menu"
 };
-var _hoisted_14 = {
-  class: "vfe-actions"
-};
-var _hoisted_15 = {
-  class: "vfe-menu"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return vue.openBlock(), vue.createBlock("div", _hoisted_1, [vue.createVNode("div", _hoisted_2, [vue.createVNode("div", _hoisted_3, [vue.renderSlot(_ctx.$slots, "folder-path", {
     path: _ctx.path
@@ -267,40 +338,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   })])]), vue.createVNode("div", _hoisted_8, [_ctx.layoutType === 'cards' ? (vue.openBlock(), vue.createBlock("div", {
     key: 0,
     class: ["vfe-cards", _ctx.cards]
-  }, [vue.renderSlot(_ctx.$slots, "cards-folders", {
-    folders: _ctx.folders,
-    tree: _ctx.tree
-  }, function () {
-    return [(vue.openBlock(true), vue.createBlock(vue.Fragment, null, vue.renderList(_ctx.folders, function (f, i) {
-      return vue.openBlock(), vue.createBlock("div", {
-        key: i,
-        class: "vfe-folder"
-      }, [vue.renderSlot(_ctx.$slots, "cards-folder", {
-        id: f.id,
-        data: f,
-        tree: _ctx.tree
-      }, function () {
-        return [vue.createVNode("button", {
-          type: "butten",
-          "data-open": f.id
-        }, vue.toDisplayString(f.id), 9, ["data-open"])];
-      })]);
-    }), 128))];
-  }), vue.renderSlot(_ctx.$slots, "cards-files", {
-    files: _ctx.files
-  }, function () {
-    return [(vue.openBlock(true), vue.createBlock(vue.Fragment, null, vue.renderList(_ctx.files, function (f, i) {
-      return vue.openBlock(), vue.createBlock("div", {
-        key: i,
-        class: "vfe-file"
-      }, [vue.renderSlot(_ctx.$slots, "cards-file", {
-        id: f.id,
-        data: f
-      }, function () {
-        return [vue.createVNode("span", null, vue.toDisplayString(f.id), 1)];
-      })]);
-    }), 128))];
-  })], 2)) : (vue.openBlock(), vue.createBlock("table", {
+  }, null, 2)) : (vue.openBlock(), vue.createBlock("table", {
     key: 1,
     class: ["vfe-table", _ctx.table]
   }, [vue.createVNode("thead", _hoisted_9, [vue.renderSlot(_ctx.$slots, "table-header", {}, function () {
@@ -329,43 +367,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         }, "Abrir", 8, ["data-open"]), vue.createVNode("button", {
           type: "button",
           "data-action": "rename",
-          "data-element": f.id
-        }, "Renombrar", 8, ["data-element"]), vue.createVNode("button", {
+          "data-folder": f.id
+        }, "Renombrar", 8, ["data-folder"]), vue.createVNode("button", {
           type: "button",
           "data-action": "delete",
-          "data-element": f.id
-        }, "Eliminar", 8, ["data-element"])])])];
-      })]);
-    }), 128))];
-  }), vue.renderSlot(_ctx.$slots, "table-files", {
-    files: _ctx.files
-  }, function () {
-    return [(vue.openBlock(true), vue.createBlock(vue.Fragment, null, vue.renderList(_ctx.files, function (f) {
-      return vue.openBlock(), vue.createBlock("tr", {
-        key: f.id,
-        class: "vfe-file"
-      }, [vue.renderSlot(_ctx.$slots, "table-file", {
-        id: f.id,
-        data: f
-      }, function () {
-        return [vue.createVNode("td", null, vue.toDisplayString(f.id), 1), vue.createVNode("td", _hoisted_14, [vue.createVNode("label", {
-          for: "id-".concat(f.id)
-        }, "Actions", 8, ["for"]), vue.createVNode("input", {
-          type: "checkbox",
-          id: "id-".concat(f.id)
-        }, null, 8, ["id"]), vue.createVNode("div", _hoisted_15, [vue.createVNode("button", {
-          type: "button",
-          "data-action": "open",
-          "data-element": f.id
-        }, "Abrir", 8, ["data-element"]), vue.createVNode("button", {
-          type: "button",
-          "data-action": "rename",
-          "data-element": f.id
-        }, "Renombrar", 8, ["data-element"]), vue.createVNode("button", {
-          type: "button",
-          "data-action": "delete",
-          "data-element": f.id
-        }, "Eliminar", 8, ["data-element"])])])];
+          "data-folder": f.id
+        }, "Eliminar", 8, ["data-folder"])])])];
       })]);
     }), 128))];
   })])], 2))])]);

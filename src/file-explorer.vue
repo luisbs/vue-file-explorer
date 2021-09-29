@@ -20,60 +20,84 @@ export default /*#__PURE__*/ defineComponent({
   },
   setup(props, { emit }) {
     const _layout = ref<string>(props.layout as "table")
-    const Tree = ref(new Map<number | string, Folder>())
-    const folderId = ref<string | number>(0)
+    const _tree = ref(new Map<string, Folder>())
+    const folderId = ref<string>("0")
 
-    const appendToTree = (news: Map<number | string, Folder>) => news.forEach((v, k) => Tree.value.set(String(k), v))
-
-    emit("initialLoad", appendToTree)
-    folderId.value = Array.from(Tree.value.keys()).shift() || 0
-
-    const attach = <T extends HTMLElement = HTMLElement>(selector: string, listener: (event: Event, element: T) => void) =>
-      document.querySelectorAll<T>(`.vfe ${selector}`).forEach(el => (el.onclick = ev => listener(ev, el)))
-
-    const attachListeners = (layout: string = "table") => {
-      emit("postUpdate", layout)
-
-      attach("button[data-open]", (_, el) => {
-        const id = el.dataset.open || 0
-        emit("folderLoad", id, appendToTree, Tree.value.has(id), () => (folderId.value = id))
-      })
-
-      attach(".vfe-folder button[data-action]", (_, el) =>
-        emit("action", { type: "folder", action: el.dataset.action || "unknown", elementId: el.dataset.element || 0 })
-      )
-      attach(".vfe-file button[data-action]", (_, el) =>
-        emit("action", { type: "file", action: el.dataset.action || "unknown", elementId: el.dataset.element || 0 })
-      )
+    const appendToTree = (news: [string, Folder] | Array<[string, Folder]> | Map<string, Folder>) => {
+      console.log("appending", news)
+      if (Array.isArray(news)) {
+        if (typeof news[0] === "string") {
+          console.log(`adding by simple Array '${news[0]}' - ${String(news[0])}`, news[1])
+          if (news[0] != "8") _tree.value.set(String(news[0]), news[1] as Folder)
+          // _tree.value.set(String(news[0]), news[1] as Folder)
+          // } else (news as Array<[string, Folder]>).forEach(([k, v]) => console.log(`adding by Array '${k}' - ${String(k)}`, v))
+        } else (news as Array<[string, Folder]>).forEach(([k, v]) => _tree.value.set(String(k), v))
+        // } else news.forEach((v, k) => console.log(`adding by simple Array '${k}' - ${String(k)}`, v))
+      } else news.forEach((v, k) => _tree.value.set(String(k), v))
     }
 
-    watch([_layout, folderId], ([l]) => emit("preUpdate", l), { flush: "pre" })
-    watch([_layout, folderId], ([l]) => attachListeners((l as unknown) as string), { flush: "post" })
+    emit("initialLoad", (news: [string, Folder] | Array<[string, Folder]> | Map<string, Folder>) => {
+      appendToTree(news)
+      folderId.value = String(Array.from(_tree.value.keys()).shift() || "0")
+    })
 
+    // watch([_layout, folderId], () => emit("preUpdate"))
+    // watch([_layout, folderId], () => emit("postUpdate"), { flush: "post" })
     onMounted(() => {
-      attach("button[data-layout]", (_, el) => (_layout.value = el.dataset.layout || "table"))
-      attachListeners()
+      const wrapper = document.querySelector<HTMLElement>(".vfe")
+      if (wrapper) {
+        wrapper.onclick = ev => {
+          try {
+            // @ts-expect-error
+            for (const el of ev.composedPath() ?? event?.path ?? [event?.target ?? event?.currentTarget]) {
+              if (el === wrapper) break
+              const set = (el as HTMLElement)?.dataset ?? {}
+              // * data-open="folderId"
+              if ("open" in set) {
+                const id = set.open || "0"
+                emit("folderLoad", id, appendToTree, _tree.value.has(id), () => (folderId.value = id))
+              }
+              // // * data-layout="table|cards"
+              // else if ("layout" in set) _layout.value = set.layout || "table"
+              // // * data-action="<user-defained-action>" data-folder="folderId"
+              // else if ("action" in set && "folder" in set)
+              //   emit("action", { type: "folder", action: set.action || "unknown", elementId: set.folder || "0" })
+              // // * data-action="<user-defained-action>" data-file="fileId"
+              // else if ("action" in set && "file" in set)
+              //   emit("action", { type: "file", action: set.action || "unknown", elementId: set.file || "0" })
+            }
+          } catch (error) {
+            console.error(error)
+          }
+        }
+      }
     })
 
     return {
-      tree: Tree,
+      tree: {},
+      // tree: _tree,
       layoutType: _layout,
       folderId,
 
-      folders: computed(() => Tree.value.get(folderId.value)?.folders || []),
-      files: computed(() => Tree.value.get(folderId.value)?.files || []),
+      // folders: computed(() => _tree.value.get(folderId.value)?.folders || []),
+      folders: computed(() => {
+        const f = _tree.value.get(folderId.value)
+        console.log(folderId.value, f, f?.folders)
+        return _tree.value.get(folderId.value)?.folders || []
+      }),
+      files: computed(() => _tree.value.get(folderId.value)?.files || []),
       path: computed(() => {
         const path: Array<[string | number, string, ("root" | "current")?]> = []
 
         // * Current folder
-        const dt = Tree.value.get(folderId.value)
+        const dt = _tree.value.get(folderId.value)
         path.push([folderId.value, String(dt?.[props.title as keyof Folder]), "current"])
 
         // * Path
         if (dt?.parentId) {
           let id: string | null = String(dt.parentId) ?? null
           do {
-            const dt = Tree.value.get(id)
+            const dt = _tree.value.get(id)
             if (dt) {
               if (!dt.parentId) {
                 path.unshift([id, String(dt?.[props.title as keyof Folder]), "root"])
@@ -113,20 +137,20 @@ export default /*#__PURE__*/ defineComponent({
 
     <div class="vfe-content">
       <div v-if="layoutType === 'cards'" class="vfe-cards" :class="cards">
-        <slot name="cards-folders" :folders="folders" :tree="tree">
+        <!-- <slot name="cards-folders" :folders="folders" :tree="tree">
           <div v-for="(f, i) in folders" :key="i" class="vfe-folder">
             <slot name="cards-folder" :id="f.id" :data="f" :tree="tree">
               <button type="butten" :data-open="f.id">{{ f.id }}</button>
             </slot>
           </div>
-        </slot>
-        <slot name="cards-files" :files="files">
+        </slot> -->
+        <!-- <slot name="cards-files" :files="files">
           <div v-for="(f, i) in files" :key="i" class="vfe-file">
             <slot name="cards-file" :id="f.id" :data="f">
               <span>{{ f.id }}</span>
             </slot>
           </div>
-        </slot>
+        </slot> -->
       </div>
 
       <table v-else class="vfe-table" :class="table">
@@ -149,15 +173,15 @@ export default /*#__PURE__*/ defineComponent({
                   <input type="checkbox" :id="`id-${f.id}`" />
                   <div class="vfe-menu">
                     <button type="button" :data-open="f.id">Abrir</button>
-                    <button type="button" data-action="rename" :data-element="f.id">Renombrar</button>
-                    <button type="button" data-action="delete" :data-element="f.id">Eliminar</button>
+                    <button type="button" data-action="rename" :data-folder="f.id">Renombrar</button>
+                    <button type="button" data-action="delete" :data-folder="f.id">Eliminar</button>
                   </div>
                 </td>
               </slot>
             </tr>
           </slot>
 
-          <slot name="table-files" :files="files">
+          <!-- <slot name="table-files" :files="files">
             <tr v-for="f in files" :key="f.id" class="vfe-file">
               <slot name="table-file" :id="f.id" :data="f">
                 <td>{{ f.id }}</td>
@@ -165,14 +189,14 @@ export default /*#__PURE__*/ defineComponent({
                   <label :for="`id-${f.id}`">Actions</label>
                   <input type="checkbox" :id="`id-${f.id}`" />
                   <div class="vfe-menu">
-                    <button type="button" data-action="open" :data-element="f.id">Abrir</button>
-                    <button type="button" data-action="rename" :data-element="f.id">Renombrar</button>
-                    <button type="button" data-action="delete" :data-element="f.id">Eliminar</button>
+                    <button type="button" data-action="open" :data-file="f.id">Abrir</button>
+                    <button type="button" data-action="rename" :data-file="f.id">Renombrar</button>
+                    <button type="button" data-action="delete" :data-file="f.id">Eliminar</button>
                   </div>
                 </td>
               </slot>
             </tr>
-          </slot>
+          </slot> -->
         </tbody>
       </table>
     </div>

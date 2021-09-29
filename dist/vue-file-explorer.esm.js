@@ -1,4 +1,4 @@
-import { defineComponent, ref, watch, onMounted, computed, openBlock, createBlock, createVNode, renderSlot, Fragment, renderList, toDisplayString } from 'vue';
+import { defineComponent, ref, onMounted, computed, openBlock, createBlock, createVNode, renderSlot, Fragment, renderList, toDisplayString } from 'vue';
 
 var script = /*#__PURE__*/defineComponent({
   name: "FileExplorer",
@@ -28,64 +28,86 @@ var script = /*#__PURE__*/defineComponent({
   }) {
     const _layout = ref(props.layout);
 
-    const Tree = ref(new Map());
-    const folderId = ref(0);
+    const _tree = ref(new Map());
 
-    const appendToTree = news => news.forEach((v, k) => Tree.value.set(String(k), v));
+    const folderId = ref("0");
 
-    emit("initialLoad", appendToTree);
-    folderId.value = Array.from(Tree.value.keys()).shift() || 0;
+    const appendToTree = news => {
+      console.log("appending", news);
 
-    const attach = (selector, listener) => document.querySelectorAll(`.vfe ${selector}`).forEach(el => el.onclick = ev => listener(ev, el));
+      if (Array.isArray(news)) {
+        if (typeof news[0] === "string") {
+          console.log(`adding by simple Array '${news[0]}' - ${String(news[0])}`, news[1]);
+          if (news[0] != "8") _tree.value.set(String(news[0]), news[1]); // _tree.value.set(String(news[0]), news[1] as Folder)
+          // } else (news as Array<[string, Folder]>).forEach(([k, v]) => console.log(`adding by Array '${k}' - ${String(k)}`, v))
+        } else news.forEach(([k, v]) => _tree.value.set(String(k), v)); // } else news.forEach((v, k) => console.log(`adding by simple Array '${k}' - ${String(k)}`, v))
 
-    const attachListeners = () => {
-      attach("button[data-open]", (_, el) => {
-        const id = el.dataset.open || 0;
-        emit("folderLoad", id, appendToTree, Tree.value.has(id), () => folderId.value = id);
-      });
-      attach(".vfe-folder button[data-action]", (_, el) => emit("action", {
-        type: "folder",
-        action: el.dataset.action || "unknown",
-        elementId: el.dataset.element || 0
-      }));
-      attach(".vfe-file button[data-action]", (_, el) => emit("action", {
-        type: "file",
-        action: el.dataset.action || "unknown",
-        elementId: el.dataset.element || 0
-      }));
+      } else news.forEach((v, k) => _tree.value.set(String(k), v));
     };
 
-    watch([_layout, folderId], ([l]) => emit("preUpdate", l), {
-      flush: "pre"
-    });
-    watch([_layout, folderId], ([l]) => {
-      attachListeners();
-      emit("postUpdate", l);
-    }, {
-      flush: "post"
-    });
+    emit("initialLoad", news => {
+      appendToTree(news);
+      folderId.value = String(Array.from(_tree.value.keys()).shift() || "0");
+    }); // watch([_layout, folderId], () => emit("preUpdate"))
+    // watch([_layout, folderId], () => emit("postUpdate"), { flush: "post" })
+
     onMounted(() => {
-      attach("button[data-layout]", (_, el) => _layout.value = el.dataset.layout || "table");
-      attachListeners();
+      const wrapper = document.querySelector(".vfe");
+
+      if (wrapper) {
+        wrapper.onclick = ev => {
+          try {
+            // @ts-expect-error
+            for (const el of (_ref = (_ev$composedPath = ev.composedPath()) !== null && _ev$composedPath !== void 0 ? _ev$composedPath : (_event = event) === null || _event === void 0 ? void 0 : _event.path) !== null && _ref !== void 0 ? _ref : [(_event$target = (_event2 = event) === null || _event2 === void 0 ? void 0 : _event2.target) !== null && _event$target !== void 0 ? _event$target : (_event3 = event) === null || _event3 === void 0 ? void 0 : _event3.currentTarget]) {
+              var _ref, _ev$composedPath, _event, _event$target, _event2, _event3, _dataset;
+
+              if (el === wrapper) break;
+              const set = (_dataset = el === null || el === void 0 ? void 0 : el.dataset) !== null && _dataset !== void 0 ? _dataset : {}; // * data-open="folderId"
+
+              if ("open" in set) {
+                const id = set.open || "0";
+                emit("folderLoad", id, appendToTree, _tree.value.has(id), () => folderId.value = id);
+              } // * data-layout="table|cards"
+              else if ("layout" in set) _layout.value = set.layout || "table"; // * data-action="<user-defained-action>" data-folder="folderId"
+                else if ("action" in set && "folder" in set) emit("action", {
+                    type: "folder",
+                    action: set.action || "unknown",
+                    elementId: set.folder || "0"
+                  }); // * data-action="<user-defained-action>" data-file="fileId"
+                  else if ("action" in set && "file" in set) emit("action", {
+                      type: "file",
+                      action: set.action || "unknown",
+                      elementId: set.file || "0"
+                    });
+            }
+          } catch (error) {}
+        };
+      }
     });
     return {
-      tree: Tree,
+      tree: {},
+      // tree: _tree,
       layoutType: _layout,
       folderId,
+      // folders: computed(() => _tree.value.get(folderId.value)?.folders || []),
       folders: computed(() => {
-        var _Tree$value$get;
+        var _tree$value$get;
 
-        return ((_Tree$value$get = Tree.value.get(folderId.value)) === null || _Tree$value$get === void 0 ? void 0 : _Tree$value$get.folders) || [];
+        const f = _tree.value.get(folderId.value);
+
+        console.log(folderId.value, f, f === null || f === void 0 ? void 0 : f.folders);
+        return ((_tree$value$get = _tree.value.get(folderId.value)) === null || _tree$value$get === void 0 ? void 0 : _tree$value$get.folders) || [];
       }),
       files: computed(() => {
-        var _Tree$value$get2;
+        var _tree$value$get2;
 
-        return ((_Tree$value$get2 = Tree.value.get(folderId.value)) === null || _Tree$value$get2 === void 0 ? void 0 : _Tree$value$get2.files) || [];
+        return ((_tree$value$get2 = _tree.value.get(folderId.value)) === null || _tree$value$get2 === void 0 ? void 0 : _tree$value$get2.files) || [];
       }),
       path: computed(() => {
         const path = []; // * Current folder
 
-        const dt = Tree.value.get(folderId.value);
+        const dt = _tree.value.get(folderId.value);
+
         path.push([folderId.value, String(dt === null || dt === void 0 ? void 0 : dt[props.title]), "current"]); // * Path
 
         if (dt !== null && dt !== void 0 && dt.parentId) {
@@ -94,7 +116,7 @@ var script = /*#__PURE__*/defineComponent({
           let id = (_String = String(dt.parentId)) !== null && _String !== void 0 ? _String : null;
 
           do {
-            const dt = Tree.value.get(id);
+            const dt = _tree.value.get(id);
 
             if (dt) {
               if (!dt.parentId) {
@@ -159,12 +181,6 @@ const _hoisted_12 = {
 const _hoisted_13 = {
   class: "vfe-menu"
 };
-const _hoisted_14 = {
-  class: "vfe-actions"
-};
-const _hoisted_15 = {
-  class: "vfe-menu"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
   return openBlock(), createBlock("div", _hoisted_1, [createVNode("div", _hoisted_2, [createVNode("div", _hoisted_3, [renderSlot(_ctx.$slots, "folder-path", {
     path: _ctx.path
@@ -179,32 +195,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }), 128))])]), createVNode("div", _hoisted_5, [renderSlot(_ctx.$slots, "layout-selector", {}, () => [_hoisted_6, _hoisted_7])])]), createVNode("div", _hoisted_8, [_ctx.layoutType === 'cards' ? (openBlock(), createBlock("div", {
     key: 0,
     class: ["vfe-cards", _ctx.cards]
-  }, [renderSlot(_ctx.$slots, "cards-folders", {
-    folders: _ctx.folders,
-    tree: _ctx.tree
-  }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.folders, (f, i) => {
-    return openBlock(), createBlock("div", {
-      key: i,
-      class: "vfe-folder"
-    }, [renderSlot(_ctx.$slots, "cards-folder", {
-      id: f.id,
-      data: f,
-      tree: _ctx.tree
-    }, () => [createVNode("button", {
-      type: "butten",
-      "data-open": f.id
-    }, toDisplayString(f.id), 9, ["data-open"])])]);
-  }), 128))]), renderSlot(_ctx.$slots, "cards-files", {
-    files: _ctx.files
-  }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.files, (f, i) => {
-    return openBlock(), createBlock("div", {
-      key: i,
-      class: "vfe-file"
-    }, [renderSlot(_ctx.$slots, "cards-file", {
-      id: f.id,
-      data: f
-    }, () => [createVNode("span", null, toDisplayString(f.id), 1)])]);
-  }), 128))])], 2)) : (openBlock(), createBlock("table", {
+  }, null, 2)) : (openBlock(), createBlock("table", {
     key: 1,
     class: ["vfe-table", _ctx.table]
   }, [createVNode("thead", _hoisted_9, [renderSlot(_ctx.$slots, "table-header", {}, () => [_hoisted_10])]), createVNode("tbody", _hoisted_11, [renderSlot(_ctx.$slots, "table-folders", {
@@ -229,39 +220,12 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, "Abrir", 8, ["data-open"]), createVNode("button", {
       type: "button",
       "data-action": "rename",
-      "data-element": f.id
-    }, "Renombrar", 8, ["data-element"]), createVNode("button", {
+      "data-folder": f.id
+    }, "Renombrar", 8, ["data-folder"]), createVNode("button", {
       type: "button",
       "data-action": "delete",
-      "data-element": f.id
-    }, "Eliminar", 8, ["data-element"])])])])]);
-  }), 128))]), renderSlot(_ctx.$slots, "table-files", {
-    files: _ctx.files
-  }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.files, f => {
-    return openBlock(), createBlock("tr", {
-      key: f.id,
-      class: "vfe-file"
-    }, [renderSlot(_ctx.$slots, "table-file", {
-      id: f.id,
-      data: f
-    }, () => [createVNode("td", null, toDisplayString(f.id), 1), createVNode("td", _hoisted_14, [createVNode("label", {
-      for: `id-${f.id}`
-    }, "Actions", 8, ["for"]), createVNode("input", {
-      type: "checkbox",
-      id: `id-${f.id}`
-    }, null, 8, ["id"]), createVNode("div", _hoisted_15, [createVNode("button", {
-      type: "button",
-      "data-action": "open",
-      "data-element": f.id
-    }, "Abrir", 8, ["data-element"]), createVNode("button", {
-      type: "button",
-      "data-action": "rename",
-      "data-element": f.id
-    }, "Renombrar", 8, ["data-element"]), createVNode("button", {
-      type: "button",
-      "data-action": "delete",
-      "data-element": f.id
-    }, "Eliminar", 8, ["data-element"])])])])]);
+      "data-folder": f.id
+    }, "Eliminar", 8, ["data-folder"])])])])]);
   }), 128))])])], 2))])]);
 }
 
