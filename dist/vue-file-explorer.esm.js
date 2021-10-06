@@ -127,7 +127,6 @@ var script = /*#__PURE__*/defineComponent({
           } while (id !== null);
         }
 
-        console.log("path", path);
         return path;
       })
     };

@@ -327,7 +327,6 @@ function _createForOfIteratorHelper(o, allowArrayLike) {
           } while (id !== null);
         }
 
-        console.log("path", path);
         return path;
       })
     };
