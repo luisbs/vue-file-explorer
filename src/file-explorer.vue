@@ -1,5 +1,5 @@
 <script lang="ts">
-import { defineComponent, computed, ref, watch, onMounted } from "vue"
+import { defineComponent, computed, ref, onMounted, watch, readonly } from "vue"
 import { Folder } from "vue-file-explorer"
 
 export default /*#__PURE__*/ defineComponent({
@@ -20,30 +20,25 @@ export default /*#__PURE__*/ defineComponent({
   },
   setup(props, { emit }) {
     const _layout = ref<string>(props.layout as "table")
-    const _tree = ref(new Map<string, Folder>())
+    const _tree = ref<Record<string, Folder>>({})
     const folderId = ref<string>("0")
 
-    const appendToTree = (news: [string, Folder] | Array<[string, Folder]> | Map<string, Folder>) => {
-      console.log("appending", news)
+    const appendToTree = (news: [string, Folder] | Array<[string, Folder]> | Record<string, Folder>) => {
       if (Array.isArray(news)) {
-        if (typeof news[0] === "string") {
-          console.log(`adding by simple Array '${news[0]}' - ${String(news[0])}`, news[1])
-          if (news[0] != "8") _tree.value.set(String(news[0]), news[1] as Folder)
-          // _tree.value.set(String(news[0]), news[1] as Folder)
-          // } else (news as Array<[string, Folder]>).forEach(([k, v]) => console.log(`adding by Array '${k}' - ${String(k)}`, v))
-        } else (news as Array<[string, Folder]>).forEach(([k, v]) => _tree.value.set(String(k), v))
-        // } else news.forEach((v, k) => console.log(`adding by simple Array '${k}' - ${String(k)}`, v))
-      } else news.forEach((v, k) => _tree.value.set(String(k), v))
+        if (typeof news[0] === "string") _tree.value[String(news[0])] = news[1] as Folder
+        else (news as Array<[string, Folder]>).forEach(([k, v]) => (_tree.value[String(k)] = v))
+      } else Object.entries(news).forEach(([k, v]) => (_tree.value[String(k)] = v))
     }
 
-    emit("initialLoad", (news: [string, Folder] | Array<[string, Folder]> | Map<string, Folder>) => {
+    emit("initialLoad", (news: [string, Folder] | Array<[string, Folder]> | Record<string, Folder>, id: string) => {
       appendToTree(news)
-      folderId.value = String(Array.from(_tree.value.keys()).shift() || "0")
+      folderId.value = String(id || "0")
     })
 
-    // watch([_layout, folderId], () => emit("preUpdate"))
-    // watch([_layout, folderId], () => emit("postUpdate"), { flush: "post" })
+    watch([_layout, folderId], () => emit("preUpdate"))
+    watch([_layout, folderId], () => emit("postUpdate"), { flush: "post" })
     onMounted(() => {
+      emit("postUpdate")
       const wrapper = document.querySelector<HTMLElement>(".vfe")
       if (wrapper) {
         wrapper.onclick = ev => {
@@ -55,16 +50,18 @@ export default /*#__PURE__*/ defineComponent({
               // * data-open="folderId"
               if ("open" in set) {
                 const id = set.open || "0"
-                emit("folderLoad", id, appendToTree, _tree.value.has(id), () => (folderId.value = id))
+                emit("folderLoad", id, appendToTree, id in _tree.value, () => (folderId.value = id))
               }
-              // // * data-layout="table|cards"
-              // else if ("layout" in set) _layout.value = set.layout || "table"
-              // // * data-action="<user-defained-action>" data-folder="folderId"
-              // else if ("action" in set && "folder" in set)
-              //   emit("action", { type: "folder", action: set.action || "unknown", elementId: set.folder || "0" })
-              // // * data-action="<user-defained-action>" data-file="fileId"
-              // else if ("action" in set && "file" in set)
-              //   emit("action", { type: "file", action: set.action || "unknown", elementId: set.file || "0" })
+              // * data-layout="table|cards"
+              else if ("layout" in set) _layout.value = set.layout || "table"
+              // * data-action="<user-defained-action>" data-folder="folderId"
+
+              const help = { tree: readonly(_tree.value), append: appendToTree, on: folderId.value, action: set.action || "unknown" }
+              if ("action" in set && "folder" in set) emit("action", { ...help, folder: set.folder || "0" })
+              // * data-action="<user-defained-action>" data-file="fileId"
+              else if ("action" in set && "file" in set) emit("action", { ...help, file: set.file || "0" })
+              // * data-action="<user-defained-action>"
+              else if ("action" in set) emit("action", help)
             }
           } catch (error) {
             console.error(error)
@@ -74,30 +71,24 @@ export default /*#__PURE__*/ defineComponent({
     })
 
     return {
-      tree: {},
-      // tree: _tree,
       layoutType: _layout,
       folderId,
 
-      // folders: computed(() => _tree.value.get(folderId.value)?.folders || []),
-      folders: computed(() => {
-        const f = _tree.value.get(folderId.value)
-        console.log(folderId.value, f, f?.folders)
-        return _tree.value.get(folderId.value)?.folders || []
-      }),
-      files: computed(() => _tree.value.get(folderId.value)?.files || []),
+      tree: computed(() => _tree.value),
+      folders: computed(() => _tree.value[folderId.value]?.folders || []),
+      files: computed(() => _tree.value[folderId.value]?.files || []),
       path: computed(() => {
         const path: Array<[string | number, string, ("root" | "current")?]> = []
 
         // * Current folder
-        const dt = _tree.value.get(folderId.value)
+        const dt = _tree.value[folderId.value]
         path.push([folderId.value, String(dt?.[props.title as keyof Folder]), "current"])
 
         // * Path
         if (dt?.parentId) {
           let id: string | null = String(dt.parentId) ?? null
           do {
-            const dt = _tree.value.get(id)
+            const dt = _tree.value[id] as Folder | undefined
             if (dt) {
               if (!dt.parentId) {
                 path.unshift([id, String(dt?.[props.title as keyof Folder]), "root"])
@@ -109,6 +100,7 @@ export default /*#__PURE__*/ defineComponent({
             }
           } while (id !== null)
         }
+        console.log("path", path)
         return path
       }),
     }
@@ -135,22 +127,24 @@ export default /*#__PURE__*/ defineComponent({
       </div>
     </div>
 
+    <slot name="help-bar"></slot>
+
     <div class="vfe-content">
       <div v-if="layoutType === 'cards'" class="vfe-cards" :class="cards">
-        <!-- <slot name="cards-folders" :folders="folders" :tree="tree">
+        <slot name="cards-folders" :folders="folders" :tree="tree">
           <div v-for="(f, i) in folders" :key="i" class="vfe-folder">
             <slot name="cards-folder" :id="f.id" :data="f" :tree="tree">
               <button type="butten" :data-open="f.id">{{ f.id }}</button>
             </slot>
           </div>
-        </slot> -->
-        <!-- <slot name="cards-files" :files="files">
+        </slot>
+        <slot name="cards-files" :files="files">
           <div v-for="(f, i) in files" :key="i" class="vfe-file">
             <slot name="cards-file" :id="f.id" :data="f">
               <span>{{ f.id }}</span>
             </slot>
           </div>
-        </slot> -->
+        </slot>
       </div>
 
       <table v-else class="vfe-table" :class="table">
@@ -169,90 +163,28 @@ export default /*#__PURE__*/ defineComponent({
               <slot name="table-folder" :id="f.id" :data="f" :tree="tree">
                 <td>{{ f.id }}</td>
                 <td class="vfe-actions">
-                  <label :for="`id-${f.id}`">Actions</label>
-                  <input type="checkbox" :id="`id-${f.id}`" />
-                  <div class="vfe-menu">
-                    <button type="button" :data-open="f.id">Abrir</button>
-                    <button type="button" data-action="rename" :data-folder="f.id">Renombrar</button>
-                    <button type="button" data-action="delete" :data-folder="f.id">Eliminar</button>
-                  </div>
+                  <button type="button" :data-open="f.id">Abrir</button>
+                  <button type="button" data-action="rename" :data-folder="f.id">Renombrar</button>
+                  <button type="button" data-action="delete" :data-folder="f.id">Eliminar</button>
                 </td>
               </slot>
             </tr>
           </slot>
 
-          <!-- <slot name="table-files" :files="files">
+          <slot name="table-files" :files="files">
             <tr v-for="f in files" :key="f.id" class="vfe-file">
               <slot name="table-file" :id="f.id" :data="f">
                 <td>{{ f.id }}</td>
                 <td class="vfe-actions">
-                  <label :for="`id-${f.id}`">Actions</label>
-                  <input type="checkbox" :id="`id-${f.id}`" />
-                  <div class="vfe-menu">
-                    <button type="button" data-action="open" :data-file="f.id">Abrir</button>
-                    <button type="button" data-action="rename" :data-file="f.id">Renombrar</button>
-                    <button type="button" data-action="delete" :data-file="f.id">Eliminar</button>
-                  </div>
+                  <button type="button" data-action="open" :data-file="f.id">Abrir</button>
+                  <button type="button" data-action="rename" :data-file="f.id">Renombrar</button>
+                  <button type="button" data-action="delete" :data-file="f.id">Eliminar</button>
                 </td>
               </slot>
             </tr>
-          </slot> -->
+          </slot>
         </tbody>
       </table>
     </div>
   </div>
 </template>
-
-<style>
-.vue-file-explorer {
-  display: flex;
-  flex-direction: column;
-}
-
-.vfe-bar {
-  display: flex;
-  justify-content: space-between;
-}
-/* .vfe-path */
-/* .vfe-layout */
-
-/* .vfe-content */
-/* .vfe-cards */
-
-.vfe-table {
-  width: 100%;
-}
-/* .vfe-table > * */
-
-/* .vfe-header */
-/* .vfe-folder */
-/* .vfe-file */
-
-.vfe-actions {
-  position: relative;
-}
-.vfe-actions > label {
-  user-select: none;
-}
-.vfe-actions > input[type="checkbox"] {
-  display: none;
-}
-
-.vfe-actions .vfe-menu {
-  z-index: -1;
-  position: absolute;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  opacity: 0;
-  height: 0;
-  width: 0;
-}
-
-.vfe-actions > input:checked + .vfe-menu {
-  z-index: 1;
-  height: auto;
-  width: auto;
-  opacity: 1;
-}
-</style>

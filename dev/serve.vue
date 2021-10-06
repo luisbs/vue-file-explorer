@@ -28,39 +28,31 @@ export default defineComponent({
         }
         update()
       },
-      initialLoad: (append: (n: Map<string, Folder>) => void) =>
+      initialLoad: (append: (n: Record<string, Folder<Record<"title", string>>>, id: string) => void) =>
         append(
-          new Map([
-            [
-              "0",
-              {
-                title: "root",
-                folders: [{ id: "1", title: "Primero" }],
-                files: [
-                  { id: "a", title: "A" },
-                  { id: "b", title: "B" },
-                ],
-              },
-            ],
-            [
-              "1",
-              {
-                title: "Sub Carpeta",
-                parentId: "0",
-                folders: [{ id: "2", title: "Tercero" }],
-                files: [],
-              },
-            ],
-            [
-              "2",
-              {
-                title: "Sub Sub Carpeta",
-                parentId: "1",
-                folders: [],
-                files: [],
-              },
-            ],
-          ])
+          {
+            "0": {
+              title: "root",
+              folders: [{ id: "1", title: "Primero" }],
+              files: [
+                { id: "a", title: "A" },
+                { id: "b", title: "B" },
+              ],
+            },
+            "1": {
+              title: "Sub Carpeta",
+              parentId: "0",
+              folders: [{ id: "2", title: "Tercero" }],
+              files: [],
+            },
+            "2": {
+              title: "Sub Sub Carpeta",
+              parentId: "1",
+              folders: [],
+              files: [],
+            },
+          },
+          "0"
         ),
     }
   },
