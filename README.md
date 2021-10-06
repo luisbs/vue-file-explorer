@@ -65,12 +65,9 @@ Emulate a file explorer
               - `td` - id
               - `td.vfe-actions`
 
-                - `input:checkbox` - Actions
-                - `div.vfe-menu`
-
-                  - `button[data-open]` - Abrir
-                  - `button[data-action="rename"]` - Renombrar
-                  - `button[data-action="delete"]` - Eliminar
+                - `button[data-open]` - Abrir
+                - `button[data-action="rename"]` - Renombrar
+                - `button[data-action="delete"]` - Eliminar
 
         - **table-files** `{ files }`
 
@@ -81,9 +78,6 @@ Emulate a file explorer
               - `td` - id
               - `td.vfe-actions`
 
-                - `input:checkbox` - Actions
-                - `div.vfe-menu`
-
-                  - `button[data-open]` - Abrir
-                  - `button[data-action="rename"]` - Renombrar
-                  - `button[data-action="delete"]` - Eliminar
+                - `button[data-open]` - Abrir
+                - `button[data-action="rename"]` - Renombrar
+                - `button[data-action="delete"]` - Eliminar
