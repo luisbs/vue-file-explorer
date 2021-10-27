@@ -8,13 +8,15 @@ export default /*#__PURE__*/ defineComponent({
   props: {
     layout: {
       type: String,
-      default: "table",
-      validator: (v: string) => ["cards", "table"].includes(v),
+      default: "list",
+      validator: (v: string) => ["cards", "list", "table"].includes(v),
     },
     /** Defines wich prop would be used to extract the title/name of a folder/file */
     title: { type: String, default: "title" },
     /** Classes to be added to cards wrapper */
     cards: String,
+    /** Classes to be added to list */
+    list: String,
     /** Classes to be added to the table */
     table: String,
   },
@@ -52,10 +54,11 @@ export default /*#__PURE__*/ defineComponent({
                 const id = set.open || "0"
                 emit("folderLoad", id, appendToTree, id in _tree.value, () => (folderId.value = id))
               }
-              // * data-layout="table|cards"
-              else if ("layout" in set) _layout.value = set.layout || "table"
-              // * data-action="<user-defained-action>" data-folder="folderId"
 
+              // * data-layout="cards|list|table"
+              else if ("layout" in set) _layout.value = set.layout || "cards"
+
+              // * data-action="<user-defained-action>" data-folder="folderId"
               const help = { tree: readonly(_tree.value), append: appendToTree, on: folderId.value, action: set.action || "unknown" }
               if ("action" in set && "folder" in set) emit("action", { ...help, folder: set.folder || "0" })
               // * data-action="<user-defained-action>" data-file="fileId"
@@ -121,6 +124,7 @@ export default /*#__PURE__*/ defineComponent({
       <div class="vfe-layout">
         <slot name="layout-selector">
           <button type="button" data-layout="cards">Cards Layout</button>
+          <button type="button" data-layout="list">List Layout</button>
           <button type="button" data-layout="table">Table Layout</button>
         </slot>
       </div>
@@ -133,7 +137,7 @@ export default /*#__PURE__*/ defineComponent({
         <slot name="cards-folders" :folders="folders" :tree="tree">
           <div v-for="(f, i) in folders" :key="i" class="vfe-folder">
             <slot name="cards-folder" :id="f.id" :data="f" :tree="tree">
-              <button type="butten" :data-open="f.id">{{ f.id }}</button>
+              <button type="button" :data-open="f.id">{{ f.id }}</button>
             </slot>
           </div>
         </slot>
@@ -145,6 +149,23 @@ export default /*#__PURE__*/ defineComponent({
           </div>
         </slot>
       </div>
+
+      <ul v-else-if="layoutType === 'list'" class="vfe-list" :class="list">
+        <slot name="list-folders" :folders="folders" :tree="tree">
+          <li v-for="f in folders" :key="f.id" class="vfe-folder">
+            <slot name="list-folder" :id="f.id" :data="f" :tree="tree">
+              <button type="button" :data-open="f.id">{{ f.id }}</button>
+            </slot>
+          </li>
+        </slot>
+        <slot name="list-files" :files="files">
+          <li v-for="f in files" :key="f.id" class="vfe-file">
+            <slot name="list-file" :id="f.id" :data="f">
+              <span>{{ f.id }}</span>
+            </slot>
+          </li>
+        </slot>
+      </ul>
 
       <table v-else class="vfe-table" :class="table">
         <thead class="vfe-header">
