@@ -301,7 +301,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       "data-action": "delete",
       "data-file": f.id
     }, "Eliminar", 8, ["data-file"])])])]);
-  }), 128))])])], 2))])]);
+  }), 128))])])], 2))]), renderSlot(_ctx.$slots, "vfe-preview", {
+    layout: _ctx.layoutType
+  })]);
 }
 
 script.render = render;
