@@ -533,9 +533,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         }, "Eliminar", 8, ["data-file"])])];
       })]);
     }), 128))];
-  })])], 2)), vue.renderSlot(_ctx.$slots, "preview", {
+  })])], 2))]), vue.renderSlot(_ctx.$slots, "vfe-preview", {
     layout: _ctx.layoutType
-  })])]);
+  })]);
 }script.render = render;// Import vue component
 
 // Default export is installable instance of component.
