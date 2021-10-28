@@ -93,6 +93,7 @@ var script = /*#__PURE__*/defineComponent({
     return {
       layoutType: _layout,
       folderId,
+      layoutCond: computed(() => `vfe__${_layout.value}`),
       tree: computed(() => _tree.value),
       folders: computed(() => {
         var _tree$value$folderId$;
@@ -138,66 +139,65 @@ var script = /*#__PURE__*/defineComponent({
 });
 
 const _hoisted_1 = {
-  class: "vfe vue-file-explorer"
-};
-const _hoisted_2 = {
   class: "vfe-bar"
 };
-const _hoisted_3 = {
+const _hoisted_2 = {
   class: "vfe-path"
 };
-const _hoisted_4 = {
+const _hoisted_3 = {
   key: 0
 };
-const _hoisted_5 = {
+const _hoisted_4 = {
   class: "vfe-layout"
 };
 
-const _hoisted_6 = /*#__PURE__*/createVNode("button", {
+const _hoisted_5 = /*#__PURE__*/createVNode("button", {
   type: "button",
   "data-layout": "cards"
 }, "Cards Layout", -1);
 
-const _hoisted_7 = /*#__PURE__*/createVNode("button", {
+const _hoisted_6 = /*#__PURE__*/createVNode("button", {
   type: "button",
   "data-layout": "list"
 }, "List Layout", -1);
 
-const _hoisted_8 = /*#__PURE__*/createVNode("button", {
+const _hoisted_7 = /*#__PURE__*/createVNode("button", {
   type: "button",
   "data-layout": "table"
 }, "Table Layout", -1);
 
-const _hoisted_9 = {
+const _hoisted_8 = {
   class: "vfe-content"
 };
-const _hoisted_10 = {
+const _hoisted_9 = {
   class: "vfe-header"
 };
 
-const _hoisted_11 = /*#__PURE__*/createVNode("tr", null, [/*#__PURE__*/createVNode("th", null, "Id"), /*#__PURE__*/createVNode("th", null, "Actions")], -1);
+const _hoisted_10 = /*#__PURE__*/createVNode("tr", null, [/*#__PURE__*/createVNode("th", null, "Id"), /*#__PURE__*/createVNode("th", null, "Actions")], -1);
 
-const _hoisted_12 = {
+const _hoisted_11 = {
   class: "vfe-content"
+};
+const _hoisted_12 = {
+  class: "vfe-actions"
 };
 const _hoisted_13 = {
   class: "vfe-actions"
 };
-const _hoisted_14 = {
-  class: "vfe-actions"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return openBlock(), createBlock("div", _hoisted_1, [createVNode("div", _hoisted_2, [createVNode("div", _hoisted_3, [renderSlot(_ctx.$slots, "folder-path", {
+  return openBlock(), createBlock("div", {
+    class: ["vfe", _ctx.layoutCond]
+  }, [createVNode("div", _hoisted_1, [createVNode("div", _hoisted_2, [renderSlot(_ctx.$slots, "folder-path", {
     path: _ctx.path
   }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.path, ([id, title, condition], i) => {
     return openBlock(), createBlock(Fragment, {
       key: i
-    }, [condition === 'current' ? (openBlock(), createBlock("span", _hoisted_4, toDisplayString(title), 1)) : (openBlock(), createBlock("button", {
+    }, [condition === 'current' ? (openBlock(), createBlock("span", _hoisted_3, toDisplayString(title), 1)) : (openBlock(), createBlock("button", {
       key: 1,
       type: "button",
       "data-open": id
     }, toDisplayString(title), 9, ["data-open"]))], 64);
-  }), 128))])]), createVNode("div", _hoisted_5, [renderSlot(_ctx.$slots, "layout-selector", {}, () => [_hoisted_6, _hoisted_7, _hoisted_8])])]), renderSlot(_ctx.$slots, "help-bar"), createVNode("div", _hoisted_9, [_ctx.layoutType === 'cards' ? (openBlock(), createBlock("div", {
+  }), 128))])]), createVNode("div", _hoisted_4, [renderSlot(_ctx.$slots, "layout-selector", {}, () => [_hoisted_5, _hoisted_6, _hoisted_7])])]), renderSlot(_ctx.$slots, "help-bar"), createVNode("div", _hoisted_8, [_ctx.layoutType === 'cards' ? (openBlock(), createBlock("div", {
     key: 0,
     class: ["vfe-cards", _ctx.cards]
   }, [renderSlot(_ctx.$slots, "cards-folders", {
@@ -256,7 +256,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   }), 128))])], 2)) : (openBlock(), createBlock("table", {
     key: 2,
     class: ["vfe-table", _ctx.table]
-  }, [createVNode("thead", _hoisted_10, [renderSlot(_ctx.$slots, "table-header", {}, () => [_hoisted_11])]), createVNode("tbody", _hoisted_12, [renderSlot(_ctx.$slots, "table-folders", {
+  }, [createVNode("thead", _hoisted_9, [renderSlot(_ctx.$slots, "table-header", {}, () => [_hoisted_10])]), createVNode("tbody", _hoisted_11, [renderSlot(_ctx.$slots, "table-folders", {
     folders: _ctx.folders,
     tree: _ctx.tree
   }, () => [(openBlock(true), createBlock(Fragment, null, renderList(_ctx.folders, f => {
@@ -267,7 +267,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
       id: f.id,
       data: f,
       tree: _ctx.tree
-    }, () => [createVNode("td", null, toDisplayString(f.id), 1), createVNode("td", _hoisted_13, [createVNode("button", {
+    }, () => [createVNode("td", null, toDisplayString(f.id), 1), createVNode("td", _hoisted_12, [createVNode("button", {
       type: "button",
       "data-open": f.id
     }, "Abrir", 8, ["data-open"]), createVNode("button", {
@@ -288,7 +288,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, [renderSlot(_ctx.$slots, "table-file", {
       id: f.id,
       data: f
-    }, () => [createVNode("td", null, toDisplayString(f.id), 1), createVNode("td", _hoisted_14, [createVNode("button", {
+    }, () => [createVNode("td", null, toDisplayString(f.id), 1), createVNode("td", _hoisted_13, [createVNode("button", {
       type: "button",
       "data-action": "open",
       "data-file": f.id
@@ -303,7 +303,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }, "Eliminar", 8, ["data-file"])])])]);
   }), 128))])])], 2)), renderSlot(_ctx.$slots, "preview", {
     layout: _ctx.layoutType
-  })])]);
+  })])], 2);
 }
 
 script.render = render;

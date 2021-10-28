@@ -291,6 +291,9 @@ function _createForOfIteratorHelper(o, allowArrayLike) {
     return {
       layoutType: _layout,
       folderId: folderId,
+      layoutCond: vue.computed(function () {
+        return "vfe__".concat(_layout.value);
+      }),
       tree: vue.computed(function () {
         return _tree.value;
       }),
@@ -335,56 +338,55 @@ function _createForOfIteratorHelper(o, allowArrayLike) {
     };
   }
 });var _hoisted_1 = {
-  class: "vfe vue-file-explorer"
-};
-var _hoisted_2 = {
   class: "vfe-bar"
 };
-var _hoisted_3 = {
+var _hoisted_2 = {
   class: "vfe-path"
 };
-var _hoisted_4 = {
+var _hoisted_3 = {
   key: 0
 };
-var _hoisted_5 = {
+var _hoisted_4 = {
   class: "vfe-layout"
 };
 
-var _hoisted_6 = /*#__PURE__*/vue.createVNode("button", {
+var _hoisted_5 = /*#__PURE__*/vue.createVNode("button", {
   type: "button",
   "data-layout": "cards"
 }, "Cards Layout", -1);
 
-var _hoisted_7 = /*#__PURE__*/vue.createVNode("button", {
+var _hoisted_6 = /*#__PURE__*/vue.createVNode("button", {
   type: "button",
   "data-layout": "list"
 }, "List Layout", -1);
 
-var _hoisted_8 = /*#__PURE__*/vue.createVNode("button", {
+var _hoisted_7 = /*#__PURE__*/vue.createVNode("button", {
   type: "button",
   "data-layout": "table"
 }, "Table Layout", -1);
 
-var _hoisted_9 = {
+var _hoisted_8 = {
   class: "vfe-content"
 };
-var _hoisted_10 = {
+var _hoisted_9 = {
   class: "vfe-header"
 };
 
-var _hoisted_11 = /*#__PURE__*/vue.createVNode("tr", null, [/*#__PURE__*/vue.createVNode("th", null, "Id"), /*#__PURE__*/vue.createVNode("th", null, "Actions")], -1);
+var _hoisted_10 = /*#__PURE__*/vue.createVNode("tr", null, [/*#__PURE__*/vue.createVNode("th", null, "Id"), /*#__PURE__*/vue.createVNode("th", null, "Actions")], -1);
 
-var _hoisted_12 = {
+var _hoisted_11 = {
   class: "vfe-content"
+};
+var _hoisted_12 = {
+  class: "vfe-actions"
 };
 var _hoisted_13 = {
   class: "vfe-actions"
 };
-var _hoisted_14 = {
-  class: "vfe-actions"
-};
 function render(_ctx, _cache, $props, $setup, $data, $options) {
-  return vue.openBlock(), vue.createBlock("div", _hoisted_1, [vue.createVNode("div", _hoisted_2, [vue.createVNode("div", _hoisted_3, [vue.renderSlot(_ctx.$slots, "folder-path", {
+  return vue.openBlock(), vue.createBlock("div", {
+    class: ["vfe", _ctx.layoutCond]
+  }, [vue.createVNode("div", _hoisted_1, [vue.createVNode("div", _hoisted_2, [vue.renderSlot(_ctx.$slots, "folder-path", {
     path: _ctx.path
   }, function () {
     return [(vue.openBlock(true), vue.createBlock(vue.Fragment, null, vue.renderList(_ctx.path, function (_ref, i) {
@@ -395,15 +397,15 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
 
       return vue.openBlock(), vue.createBlock(vue.Fragment, {
         key: i
-      }, [condition === 'current' ? (vue.openBlock(), vue.createBlock("span", _hoisted_4, vue.toDisplayString(title), 1)) : (vue.openBlock(), vue.createBlock("button", {
+      }, [condition === 'current' ? (vue.openBlock(), vue.createBlock("span", _hoisted_3, vue.toDisplayString(title), 1)) : (vue.openBlock(), vue.createBlock("button", {
         key: 1,
         type: "button",
         "data-open": id
       }, vue.toDisplayString(title), 9, ["data-open"]))], 64);
     }), 128))];
-  })]), vue.createVNode("div", _hoisted_5, [vue.renderSlot(_ctx.$slots, "layout-selector", {}, function () {
-    return [_hoisted_6, _hoisted_7, _hoisted_8];
-  })])]), vue.renderSlot(_ctx.$slots, "help-bar"), vue.createVNode("div", _hoisted_9, [_ctx.layoutType === 'cards' ? (vue.openBlock(), vue.createBlock("div", {
+  })]), vue.createVNode("div", _hoisted_4, [vue.renderSlot(_ctx.$slots, "layout-selector", {}, function () {
+    return [_hoisted_5, _hoisted_6, _hoisted_7];
+  })])]), vue.renderSlot(_ctx.$slots, "help-bar"), vue.createVNode("div", _hoisted_8, [_ctx.layoutType === 'cards' ? (vue.openBlock(), vue.createBlock("div", {
     key: 0,
     class: ["vfe-cards", _ctx.cards]
   }, [vue.renderSlot(_ctx.$slots, "cards-folders", {
@@ -478,9 +480,9 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
   })], 2)) : (vue.openBlock(), vue.createBlock("table", {
     key: 2,
     class: ["vfe-table", _ctx.table]
-  }, [vue.createVNode("thead", _hoisted_10, [vue.renderSlot(_ctx.$slots, "table-header", {}, function () {
-    return [_hoisted_11];
-  })]), vue.createVNode("tbody", _hoisted_12, [vue.renderSlot(_ctx.$slots, "table-folders", {
+  }, [vue.createVNode("thead", _hoisted_9, [vue.renderSlot(_ctx.$slots, "table-header", {}, function () {
+    return [_hoisted_10];
+  })]), vue.createVNode("tbody", _hoisted_11, [vue.renderSlot(_ctx.$slots, "table-folders", {
     folders: _ctx.folders,
     tree: _ctx.tree
   }, function () {
@@ -493,7 +495,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         data: f,
         tree: _ctx.tree
       }, function () {
-        return [vue.createVNode("td", null, vue.toDisplayString(f.id), 1), vue.createVNode("td", _hoisted_13, [vue.createVNode("button", {
+        return [vue.createVNode("td", null, vue.toDisplayString(f.id), 1), vue.createVNode("td", _hoisted_12, [vue.createVNode("button", {
           type: "button",
           "data-open": f.id
         }, "Abrir", 8, ["data-open"]), vue.createVNode("button", {
@@ -518,7 +520,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
         id: f.id,
         data: f
       }, function () {
-        return [vue.createVNode("td", null, vue.toDisplayString(f.id), 1), vue.createVNode("td", _hoisted_14, [vue.createVNode("button", {
+        return [vue.createVNode("td", null, vue.toDisplayString(f.id), 1), vue.createVNode("td", _hoisted_13, [vue.createVNode("button", {
           type: "button",
           "data-action": "open",
           "data-file": f.id
@@ -535,7 +537,7 @@ function render(_ctx, _cache, $props, $setup, $data, $options) {
     }), 128))];
   })])], 2)), vue.renderSlot(_ctx.$slots, "preview", {
     layout: _ctx.layoutType
-  })])]);
+  })])], 2);
 }script.render = render;// Import vue component
 
 // Default export is installable instance of component.
